@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+
+# JSON data files (optional - keep locally)
+# users.json
+# facebook_data.json
+# support_messages.json
+
+# Environment
+.env
