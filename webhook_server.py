@@ -30,8 +30,57 @@ app = Flask(__name__)
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "")
 PORT = int(os.environ.get("PORT", 10000))
 
-# Bot application instance
-bot_app = None
+# Bot application instance - Initialize at module level
+request_obj = HTTPXRequest(
+    connect_timeout=20.0,
+    read_timeout=20.0,
+    write_timeout=20.0,
+    pool_timeout=20.0,
+)
+
+bot_app = (
+    Application.builder()
+    .token(BOT_TOKEN)
+    .request(request_obj)
+    .post_init(post_init)
+    .build()
+)
+
+# Register handlers
+bot_app.add_handler(CommandHandler("start", start))
+bot_app.add_handler(CommandHandler("cancel", cmd_cancel))
+bot_app.add_handler(CommandHandler("users", cmd_users))
+bot_app.add_handler(CommandHandler("userinfo", cmd_userinfo))
+bot_app.add_handler(CommandHandler("support", cmd_support))
+bot_app.add_handler(CommandHandler("stats", cmd_stats))
+bot_app.add_handler(CommandHandler("block", cmd_block))
+bot_app.add_handler(CommandHandler("unblock", cmd_unblock))
+bot_app.add_handler(CommandHandler("remove", cmd_remove))
+bot_app.add_handler(CommandHandler("note", cmd_note))
+bot_app.add_handler(CommandHandler("broadcast", cmd_broadcast))
+bot_app.add_handler(CommandHandler("msg", cmd_msg))
+bot_app.add_handler(CommandHandler("fbdata", cmd_fbdata))
+bot_app.add_handler(CallbackQueryHandler(button_callback))
+bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+bot_app.add_error_handler(error_handler)
+
+# Set webhook on startup
+import asyncio
+
+def setup_webhook_sync():
+    """Set webhook synchronously during app startup"""
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(bot_app.bot.set_webhook(url=WEBHOOK_URL))
+        logger.info("Webhook set to: %s", WEBHOOK_URL)
+        loop.close()
+    except Exception as e:
+        logger.error("Failed to set webhook: %s", e)
+
+# Initialize webhook when module loads
+if WEBHOOK_URL:
+    setup_webhook_sync()
 
 
 async def health_check():
@@ -52,63 +101,3 @@ def webhook():
         update = Update.de_json(request.get_json(), bot_app.bot)
         bot_app.create_task(bot_app.process_update(update))
     return {"status": "ok"}, 200
-
-
-def main():
-    global bot_app
-    
-    if not BOT_TOKEN or "YOUR_BOT_TOKEN" in BOT_TOKEN:
-        raise ValueError("Set BOT_TOKEN at the top of bot.py")
-    if not WEBHOOK_URL:
-        raise ValueError("Set WEBHOOK_URL environment variable")
-    
-    logger.info("Starting bot with webhook: %s", WEBHOOK_URL)
-    
-    request = HTTPXRequest(
-        connect_timeout=20.0,
-        read_timeout=20.0,
-        write_timeout=20.0,
-        pool_timeout=20.0,
-    )
-    
-    bot_app = (
-        Application.builder()
-        .token(BOT_TOKEN)
-        .request(request)
-        .post_init(post_init)
-        .build()
-    )
-    
-    # Register handlers
-    bot_app.add_handler(CommandHandler("start", start))
-    bot_app.add_handler(CommandHandler("cancel", cmd_cancel))
-    bot_app.add_handler(CommandHandler("users", cmd_users))
-    bot_app.add_handler(CommandHandler("userinfo", cmd_userinfo))
-    bot_app.add_handler(CommandHandler("support", cmd_support))
-    bot_app.add_handler(CommandHandler("stats", cmd_stats))
-    bot_app.add_handler(CommandHandler("block", cmd_block))
-    bot_app.add_handler(CommandHandler("unblock", cmd_unblock))
-    bot_app.add_handler(CommandHandler("remove", cmd_remove))
-    bot_app.add_handler(CommandHandler("note", cmd_note))
-    bot_app.add_handler(CommandHandler("broadcast", cmd_broadcast))
-    bot_app.add_handler(CommandHandler("msg", cmd_msg))
-    bot_app.add_handler(CommandHandler("fbdata", cmd_fbdata))
-    bot_app.add_handler(CallbackQueryHandler(button_callback))
-    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    bot_app.add_error_handler(error_handler)
-    
-    # Set webhook
-    import asyncio
-    
-    async def setup_webhook():
-        await bot_app.bot.set_webhook(url=WEBHOOK_URL)
-        logger.info("Webhook set to: %s", WEBHOOK_URL)
-    
-    asyncio.get_event_loop().run_until_complete(setup_webhook())
-    
-    # Start Flask server
-    app.run(host="0.0.0.0", port=PORT, debug=False)
-
-
-if __name__ == "__main__":
-    main()
