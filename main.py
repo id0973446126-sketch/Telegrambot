@@ -85,7 +85,7 @@ async def health_head():
     return Response(status_code=200)
 
 
-@app.post(f"/{BOT_TOKEN.split(':')[1]}")
+@app.post("/AAG8iYmRr7mj7pDJexuRuxbmyxx5je4Xc-8")
 async def webhook(request: Request):
     """Webhook endpoint for Telegram updates"""
     try:
