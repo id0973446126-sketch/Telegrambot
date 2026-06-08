@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # Flask app
 app = Flask(__name__)
 
-# Webhook configuration
+# Webhook configuration - Updated for Render deployment
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "")
 PORT = int(os.environ.get("PORT", 10000))
 
