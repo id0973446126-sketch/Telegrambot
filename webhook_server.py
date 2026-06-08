@@ -99,5 +99,18 @@ def webhook():
     """Webhook endpoint for Telegram updates"""
     if request.is_json:
         update = Update.de_json(request.get_json(), bot_app.bot)
-        bot_app.create_task(bot_app.process_update(update))
+        # Run the update processing in a new event loop
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                bot_app.create_task(bot_app.process_update(update))
+            else:
+                loop.run_until_complete(bot_app.process_update(update))
+        except RuntimeError:
+            # No event loop exists, create one
+            new_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(new_loop)
+            new_loop.run_until_complete(bot_app.process_update(update))
+            new_loop.close()
     return {"status": "ok"}, 200
