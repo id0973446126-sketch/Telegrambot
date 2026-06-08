@@ -66,10 +66,23 @@ bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_messa
 bot_app.add_error_handler(error_handler)
 
 
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {"status": "ok", "service": "Telegram Bot"}
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint"""
     return {"status": "ok", "message": "Bot is running"}
+
+
+@app.head("/health")
+async def health_head():
+    """Health check HEAD endpoint for uptime monitors"""
+    from fastapi.responses import Response
+    return Response(status_code=200)
 
 
 @app.post(f"/{BOT_TOKEN.split(':')[1]}")
